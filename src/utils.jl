@@ -20,3 +20,14 @@ function savewat(moduletext, name)
     println("INFO: saved ",name,".wat")
     return nothing
 end
+
+open("debuginfo.txt", "w") do io
+    println(io, "DEBUGINFO")
+end
+
+function info(s...)
+    open("debuginfo.txt", "a") do io
+        println(io, s...)
+    end
+    #println(s...)
+end

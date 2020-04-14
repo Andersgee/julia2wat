@@ -18,13 +18,6 @@ function exA2functext(ex, A; doexport=true)
     return functext
 end
 
-#io = open("debuginfo.txt", "a");
-function info(s...)
-	#global io
-	#println(io, s...)
-	println(s...)
-end
-
 moduletext = [];
 function code_wat(ex, A, name)
 	info("DEBUGINFO: ex=",ex, " A=",A)
@@ -32,9 +25,6 @@ function code_wat(ex, A, name)
 	moduletext = [];	 
 	push!(moduletext, exA2functext(ex, A))
     savewat(moduletext, name)
-
-    #global io
-    #close(io)
 end
 
 parseitem(s,cinfo, item, head=:(call)) = isa(item, Expr) ? parseexpr(s,cinfo, item) : parsearg(s,cinfo, item, head)
