@@ -1,7 +1,5 @@
-macro code_wat(ex,name="")
-	#code_wat(function, types.(args))
-	#code_wat(weather.solartime, Tuple{Float64, Float64, Float64, Float64})
-	:(code_wat($(esc(ex.args[1])), Base.typesof($(esc.(ex.args[2:end])...)),$name))
+macro code_wat(ex, name)
+	:(code_wat($(esc(ex.args[1])), Base.typesof($(esc.(ex.args[2:end])...)), $name))
 end
 
 function exA2functext(ex, A; doexport=true)
@@ -20,31 +18,23 @@ function exA2functext(ex, A; doexport=true)
     return functext
 end
 
-moduletext = [];
+#io = open("debuginfo.txt", "a");
+function info(s...)
+	#global io
+	#println(io, s...)
+	println(s...)
+end
 
-function code_wat(ex, A, name="")
-	println("DEBUGINFO: ex=",ex, " A=",A)
-	println()
+moduletext = [];
+function code_wat(ex, A, name)
+	info("DEBUGINFO: ex=",ex, " A=",A)
 	global moduletext	
 	moduletext = [];	 
 	push!(moduletext, exA2functext(ex, A))
+    savewat(moduletext, name)
 
-
-    if (name != "")
-        open(string(name,".wat"), "w") do io
-            write(io, "(module \$",name,"\n")
-            write(io, JSimports())
-            for t in moduletext
-            	write(io, t)
-            end
-            write(io, "\n)")
-        end
-        println("\nINFO: saved ",name,".wat")
-        return
-    else
-        println.(moduletext)
-        return
-    end
+    #global io
+    #close(io)
 end
 
 parseitem(s,cinfo, item, head=:(call)) = isa(item, Expr) ? parseexpr(s,cinfo, item) : parsearg(s,cinfo, item, head)
@@ -52,7 +42,7 @@ parseitems(s, cinfo, items, head=:(call)) = parseitem.((s,), (cinfo,), items, (h
 
 function parseexpr(s,cinfo, e)
     #some special ops for entire expressions go here
-    if (e.head == :(invoke) && isa(e.args[1],MethodInstance) && e.args[1].def.name == :(println))
+    if (e.head == :(invoke) && isa(e.args[1],MethodInstance) && e.args[1].def.name == :(info))
         ex_println(s, cinfo, e.args)
     elseif (isa(e.args[1],GlobalRef) && e.args[1].name == :(ifelse))
         ex_ifelse(s, cinfo, e.args)
@@ -78,33 +68,29 @@ function parsearg(s,cinfo, a, head=:(call))
     	if (a.name in keys(op))
     		push!(s,op[a.name])
     	else
-    		println("DEBUGINFO: ",head," GlobalRef ", a) #getfield(a, :(mod)) ,getfield(a, :(name))
+    		info("DEBUGINFO: ",head," GlobalRef ", a) #getfield(a, :(mod)) ,getfield(a, :(name))
     	end
 	elseif isa(a,Number)
         op_number(s,cinfo,a)
-    
-    #elseif isa(a,String)
-    #    push!(s,a) #need way more shenanigans for this to work in wasm
-    
+    elseif isa(a,Type)
+        info("DEBUGINFO: ",head, " Type ",a)
     elseif isa(a,MethodInstance)
         def = a.def
-        method_specialized_signature = getfield(getfield(def, :(specializations)), :(sig))
-        argtypes = getfield(method_specialized_signature,3)[2:end] #argtypes
-		
         fname = getfield(def, :(name))
         if (fname in keys(op))
 	    	#already dealt with
-        #elseif !(fname in keys(op))
     	else
+    		method_specialized_signature = getfield(getfield(def, :(specializations)), :(sig))
+        	argtypes = getfield(method_specialized_signature,3)[2:end] #argtypes
     		m = getfield(def, Symbol("module"))
 
     		if (string(m) == "Base")
-    			println("DEBUGINFO: ", head," IGNORING MethodInstance ",a)
+    			info("DEBUGINFO: ", head," IGNORING MethodInstance ",a)
     		else
-	    		println("DEBUGINFO: ", head," MethodInstance ",a)
+	    		info("DEBUGINFO: ", head," MethodInstance ",a)
 		        ex = getfield(getfield(def, Symbol("module")), fname) #function name as a real reference rather than string or some such
 		        A = Tuple{argtypes...}
-		        println("DEBUGINFO: ex=",ex, " A=",A)
+		        info("DEBUGINFO: ex=",ex, " A=",A)
 	        	push!(s, string("call \$",fname))
 	        	global moduletext
 	        	push!(moduletext, exA2functext(ex, A))
@@ -113,24 +99,23 @@ function parsearg(s,cinfo, a, head=:(call))
 
     elseif isa(a,Symbol)
         #push!(s,head," Symbol ",a)
-        println("DEBUGINFO: ",head," Symbol ",a)
+        info("DEBUGINFO: ",head," Symbol ",a)
     elseif isa(a,IntrinsicFunction)
-        println("DEBUGINFO: ",head," IntrinsicFunction ",a)
-    elseif isa(a,Type)
-    	#not ever needed?
-        #println("DEBUGINFO: ",head, " Type ",a)
+        info("DEBUGINFO: ",head," IntrinsicFunction ",a)
+    #elseif isa(a,String)
+        #push!(s,a) #need way more shenanigans for this to work in wasm
     #=
     elseif isa(a,PhiNode)
-    	println("DEBUGINFO: ",head," PhiNode.edges ",a.edges)
-    	println("DEBUGINFO: ",head," PhiNode.values ",a.values)
+    	info("DEBUGINFO: ",head," PhiNode.edges ",a.edges)
+    	info("DEBUGINFO: ",head," PhiNode.values ",a.values)
     	push!(s, a)
     	#push!(s, "(local \$tmp i32)") #tmp=cinfo.slotnames[i] ..somehow
     elseif isa(a,GotoNode)
-    	println("DEBUGINFO: ",head," GotoNode ",a)
+    	info("DEBUGINFO: ",head," GotoNode ",a)
     	push!(s, "goto",a.label)
     =#
 	else
-		println("DEBUGINFO: ",head," ELSE_ARG ",a)
+		info("DEBUGINFO: ",head," ELSE_ARG ",a)
 	end
 end
 
@@ -159,7 +144,7 @@ function functiondeclaration(cinfo, A, R, doexport=false, opt=true)
         elseif R <: AbstractFloat
             push!(s, string(" (result f32)"))
         elseif R <: Any
-            println("WARNING! this function is type unstable. meaning the wat code might not be correct")
+            info("WARNING! this function is type unstable. meaning the wat code might not be correct")
             push!(s, string(" (result f32)"))
         end
     end
@@ -205,9 +190,9 @@ function inlinephivalues(SSA)
 end
 
 function inlinessa(SSA)
-    println("SSA:")
+    info("SSA:")
     for i=1:length(SSA)
-    	println("%",i,": ",join(string.(SSA[i])," "))
+    	info("%",i,": ",join(string.(SSA[i])," "))
     end
 
     used=[]
@@ -236,53 +221,4 @@ function inlinessa(SSA)
     end
 
     return join(join.(SSA))
-
-    #=
-    #quality of life would be insert newline when brackets match..
-    funcbody = string(join(join.(SSA)))
-    body = funcbody[1:end]
-
-    ob=0 #open brackets
-    ib=0 #inserted brackets
-    tabs=0
-    for i=1:length(funcbody)
-    	t=funcbody[i]
-    	if (t=='(')
-    		ob+=1
-    		body = pushat(body,'\n',i+ib-1)
-    		ib+=1
-    		tabs+=1
-    		body = pushat(body,repeat(" ",tabs),i+ib)
-    		ib+=tabs
-    	elseif (t==')')
-    		ob-=1
-    	end
-    	
-    	if (ob==0 && t==')')
-    		tabs-=1
-    		body = pushat(body,'\n',i+ib)
-    		ib+=1
-    	end
-    end
-    return body
-    =#
-end
-
-pushat(v,c,i) = join([v[1:i],c,v[i+1:end]])
-
-printwat(name) = println(open(f->read(f, String), string(name,".wat")))
-
-function compilewat(name; optimize=true)
-    if optimize
-        cmd = string("./wasm.sh ",name,".wat ",name,".wasm -O4")
-    else
-        cmd = string("./wasm.sh ",name,".wat ",name,".wasm")
-    end
-    run(`sh -c $cmd`)
-
-
-    printwat(name)
-    println("\nINFO: saved ",name,".wat")
-    println("INFO: saved ",name,".wasm")
-    return nothing
 end
