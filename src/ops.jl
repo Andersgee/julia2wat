@@ -18,10 +18,9 @@ max_llvm(x::Float64, y::Float64) = llvmcall(("declare double @llvm.maxnum.f64(do
 sqrt(x::Float64) = sqrt_llvm(x)
 sqrt(x::Int64) = sqrt_llvm(Float64(x))
 
-#^(x::Float64,y::Float64) = pow_llvm(x,y)
-#^(x::Int64,y::Float64)  = pow_llvm(Float64(x),y)
-#^(x::Float64,y::Int64) = pow_llvm(x,Float64(y))
-
+^(x::Float64,y::Float64) = pow_llvm(x,y)
+^(x::Int64,y::Float64)  = pow_llvm(Float64(x),y)
+^(x::Float64,y::Int64) = pow_llvm(x,Float64(y))
 #^(x::Float64,y::Int64) = powi_llvm(x,y) #powi_llvm
 
 min(x::Float64, y::Float64) = min_llvm(x,y)

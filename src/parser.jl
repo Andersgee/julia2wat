@@ -11,9 +11,6 @@ function exA2functext(ex, A; doexport=true)
         parseitem(s,cinfo, item)
         push!(SSA,s)
     end
-    
-    #inlinephivalues(SSA) #debug
-
     functext = join(["\n",functiondeclaration(cinfo, A, R, doexport), "\n",inlinessa(SSA),"\n)\n"])
     return functext
 end
@@ -153,8 +150,8 @@ function functiondeclaration(cinfo, A, R, doexport=false, opt=true)
     return join(s)
 end
 
+#=
 function inlinephivalues(SSA)
-	#copy paste from SSA
 	used=[]
     for i=1:length(SSA), j=1:length(SSA[i])
         if isa(SSA[i][j],PhiNode)
@@ -176,8 +173,8 @@ function inlinephivalues(SSA)
             SSA[i] = ""
         end
     end
-
 end
+=#
 
 function inlinessa(SSA)
     info("SSA:")

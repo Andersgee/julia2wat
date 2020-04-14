@@ -28,6 +28,9 @@ SSA:
 %20: %19
 DEBUGINFO: invoke GlobalRef Main.example.solartime
 DEBUGINFO: call Type Float64
+DEBUGINFO: call GlobalRef julia2wat.llvmcall
+DEBUGINFO: call GlobalRef julia2wat.Float64
+DEBUGINFO: call Type Tuple{Float64,Float64}
 DEBUGINFO: invoke MethodInstance MethodInstance for solarzenith(::Float64, ::Float64, ::Float64)
 DEBUGINFO: ex=solarzenith A=Tuple{Float64,Float64,Float64}
 SSA:
@@ -79,12 +82,14 @@ SSA:
 %5: f32.div %4 (f32.const 368.0)
 %6: call $sin %5
 %7: f32.mul (f32.const 0.4093) %6
-%8: call $solarzenith %1 %7 (local.get $l)
-%9: f32.store (i32.add (local.get $v) (i32.const 4)) %8
-%10: call $solarazimuth %1 %7 (local.get $l)
-%11: f32.store (i32.add (local.get $v) (i32.const 8)) %10
-%12: f32.load (i32.add (local.get $v) (i32.const 4))
-%13: call $consolelog %12
-%14: f32.load (i32.add (local.get $v) (i32.const 8))
+%8: call $pow
+%9: %8 %7 (f32.const 4.2)
+%10: call $solarzenith %1 %9 (local.get $l)
+%11: f32.store (i32.add (local.get $v) (i32.const 4)) %10
+%12: call $solarazimuth %1 %7 (local.get $l)
+%13: f32.store (i32.add (local.get $v) (i32.const 8)) %12
+%14: f32.load (i32.add (local.get $v) (i32.const 4))
 %15: call $consolelog %14
-%16: 
+%16: f32.load (i32.add (local.get $v) (i32.const 8))
+%17: call $consolelog %16
+%18: 
