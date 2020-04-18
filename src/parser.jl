@@ -114,7 +114,7 @@ function parsearg(s,cinfo, a, SSAid, head=:(call))
         info("DEBUGINFO: ",head," PhiNode.edges ",a.edges)
         info("DEBUGINFO: ",head," PhiNode.values ",a.values)
         global localvardict
-        prepend!(s, ["(local localvardict[key] cinfo.ssavaluetypes[myssaindex])"])
+        prepend!(s, [join(["(local localvardict[key] ",type2str(cinfo.ssavaluetypes[SSAid]),")"])])
         push!(s, " (local.set localvardict[unused_key])")
     elseif isa(a,PiNode)
         op_number(s,cinfo,a.val)

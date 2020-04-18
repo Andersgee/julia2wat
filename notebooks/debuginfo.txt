@@ -2,13 +2,13 @@ DEBUGINFO
 DEBUGINFO: ex=f A=Tuple{Float64}
 DEBUGINFO: call ELSE_ARG nothing
 DEBUGINFO: call PhiNode.edges Any[1, 8]
-DEBUGINFO: call PhiNode.values Any[0.0, :(%7)]
-DEBUGINFO: call PhiNode.edges Any[1, 8]
 DEBUGINFO: call PhiNode.values Any[0, :(%6)]
+DEBUGINFO: call PhiNode.edges Any[1, 8]
+DEBUGINFO: call PhiNode.values Any[0.0, :(%7)]
 SSA:
 %1: 
-%2: (local localvardict[key] cinfo.ssavaluetypes[myssaindex])  (local.set localvardict[unused_key])
-%3: (local localvardict[key] cinfo.ssavaluetypes[myssaindex])  (local.set localvardict[unused_key])
+%2: (local localvardict[key] i32)  (local.set localvardict[unused_key])
+%3: (local localvardict[key] f32)  (local.set localvardict[unused_key])
 %4: i32.lt_s (local.get $localvardict[key]) (i32.const 10)
 %5: (block (loop (br_if 1 (i32.eqz %4 ))
 %6: (local.set localvardict[key]  i32.add (local.get $localvardict[key]) (i32.const 1)
