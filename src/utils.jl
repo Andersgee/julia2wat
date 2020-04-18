@@ -21,8 +21,10 @@ function savewat(moduletext, name)
     return nothing
 end
 
-open("debuginfo.txt", "w") do io
-    println(io, "DEBUGINFO")
+function resetinfo()
+    open("debuginfo.txt", "w") do io
+        println(io, "DEBUGINFO")
+    end
 end
 
 function info(s...)

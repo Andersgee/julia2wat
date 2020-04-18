@@ -7,9 +7,9 @@ function exA2functext(ex, A; doexport=true)
     cinfo, R = code_typed(ex, A, optimize=true)[1]
 	dump(cinfo.code) #debug
 	SSA=[]
-    for item in cinfo.code
+    for SSAid=1:length(cinfo.code)
         s=[]
-        parseitem(s,cinfo, item)
+        parseitem(s,cinfo, cinfo.code[SSAid], SSAid)
         push!(SSA,s)
     end
     functext = join(["\n",functiondeclaration(cinfo, A, R, doexport), "\n",inlinessa(SSA),"\n)\n"])
@@ -19,6 +19,7 @@ end
 moduletext = [];
 localvardict = Dict()
 function code_wat(ex, A, name)
+    resetinfo()
 	info("DEBUGINFO: ex=",ex, " A=",A)
 	global moduletext	
 	moduletext = [];
@@ -28,35 +29,42 @@ function code_wat(ex, A, name)
     savewat(moduletext, name)
 end
 
-parseitem(s,cinfo, item, head=:(call)) = isa(item, Expr) ? parseexpr(s,cinfo, item) : parsearg(s,cinfo, item, head)
-parseitems(s, cinfo, items, head=:(call)) = parseitem.((s,), (cinfo,), items, (head,))
+parseitem(s,cinfo, item, SSAid, head=:(call)) = isa(item, Expr) ? parseexpr(s,cinfo, item, SSAid) : parsearg(s,cinfo, item, SSAid, head)
+parseitems(s, cinfo, items, SSAid, head=:(call)) = parseitem.((s,), (cinfo,), items, (SSAid,), (head,))
 
-function parseexpr(s,cinfo, e)
+function parseexpr(s,cinfo, e, SSAid)
     #some special ops for entire expressions go here
     if (e.head == :(invoke) && isa(e.args[1],MethodInstance) && e.args[1].def.name == :(info))
-        ex_println(s, cinfo, e.args)
+        ex_println(s, cinfo, e.args, SSAid)
     elseif (isa(e.args[1],GlobalRef) && e.args[1].name == :(ifelse))
-        ex_ifelse(s, cinfo, e.args)
+        ex_ifelse(s, cinfo, e.args, SSAid)
     elseif (isa(e.args[1],GlobalRef) && e.args[1].name == :(arrayref))
-        ex_arrayref(s, cinfo, e.args)
+        ex_arrayref(s, cinfo, e.args, SSAid)
     elseif (isa(e.args[1],GlobalRef) && e.args[1].name == :(arrayset))
-        ex_arrayset(s, cinfo, e.args)
+        ex_arrayset(s, cinfo, e.args, SSAid)
     elseif (isa(e.args[1],GlobalRef) && e.args[1].name == :(tuple)) && e.args[2][1:7] == "declare"
-        ex_llvm(s,cinfo, e.args)
+        ex_llvm(s,cinfo, e.args, SSAid)
     elseif (e.head == :(gotoifnot)) #conditional branch, aka continue aka br_if but.. br_if egzero(condition) instead of gotoif condition ?
-    	ex_gotoifnot(s,cinfo, e.args)
+    	ex_gotoifnot(s,cinfo, e.args, SSAid)
     #elseif e.head == :(=) #assignment in the IR
     #   local.set ? 
     else
-        parseitems(s,cinfo, e.args, e.head)
+        parseitems(s,cinfo, e.args, SSAid, e.head)
     end
 end
 
-function parsearg(s,cinfo, a, head=:(call))
+function parsearg(s,cinfo, a, SSAid, head=:(call))
 	if isa(a,SSAValue)
         if isa(cinfo.code[a.id], PhiNode)
             push!(s, "(local.get \$localvardict[key])")
-            prepend!(s, ["(local.set localvardict[key] "]) #this will break parenthesis...
+            #if (head != Symbol("return"))
+
+            #pn = cinfo.code[a.id]; #phinode
+            #d = Dict(pn.edges .=> pn.values) #phinode dict
+            if (SSAValue(SSAid) in values(cinfo.code[a.id].values) )
+                println("TRIGGERED")
+                prepend!(s, ["(local.set localvardict[key] "]) #this will break parenthesis...
+            end
         else
             push!(s,a)
         end
@@ -108,6 +116,8 @@ function parsearg(s,cinfo, a, head=:(call))
         global localvardict
         prepend!(s, ["(local localvardict[key] cinfo.ssavaluetypes[myssaindex])"])
         push!(s, " (local.set localvardict[unused_key])")
+    elseif isa(a,PiNode)
+        op_number(s,cinfo,a.val)
     #elseif isa(a,String)
         #push!(s,a) #need way more shenanigans for this to work in wasm
     #=

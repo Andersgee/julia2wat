@@ -126,7 +126,7 @@ op_number(s,cinfo,a) = (typeof(a) <: AbstractFloat) ? push!(s, string("(f32.cons
 #function ex_set()
 #end
 
-function ex_llvm(s, cinfo, as)
+function ex_llvm(s, cinfo, as, SSAid)
     if (as[2]=="declare double @llvm.sqrt.f64(double %Val)")
         push!(s,"call \$sqrt")
     elseif (as[2]=="declare double @llvm.pow.f64(double %Val, double %Power)")
@@ -140,61 +140,61 @@ function ex_llvm(s, cinfo, as)
     end
 end
 
-function ex_gotoifnot(s, cinfo, as)
+function ex_gotoifnot(s, cinfo, as, SSAid)
     #(block (loop (br_if 1 (i32.eqz (i32.lt_s (get_local $i) (i32.const 10))))
     push!(s, "(block (loop (br_if 1 (i32.eqz")
-    parseitem(s, cinfo, as[1])
+    parseitem(s, cinfo, as[1], SSAid)
     push!(s, "))") #end eqz, end block loop later at the gotonode
 end
 
-function ex_ifelse(s, cinfo, as)
+function ex_ifelse(s, cinfo, as, SSAid)
 	push!(s, "select")
-	parseitem(s, cinfo, as[3])
-	parseitem(s, cinfo, as[4])
-	parseitem(s, cinfo, as[2])
+	parseitem(s, cinfo, as[3], SSAid)
+	parseitem(s, cinfo, as[4], SSAid)
+	parseitem(s, cinfo, as[2], SSAid)
 end
 
-function ex_println(s, cinfo, as)
+function ex_println(s, cinfo, as, SSAid)
 	push!(s, "call \$consolelog ")
-	parseitems(s, cinfo, as[3:end])
+	parseitems(s, cinfo, as[3:end], SSAid)
 	#push!(s, ")")
 end
 
-function ex_arrayref(s, cinfo, as)
+function ex_arrayref(s, cinfo, as, SSAid)
     #as=[GlobalRef, Bool=true, arrayname, idx]
     #                                  3        4
     push!(s, string("f32.load"))
     if isa(as[4],Number)
         push!(s, string("(i32.add"))
-        parseitem(s, cinfo, as[3])
+        parseitem(s, cinfo, as[3], SSAid)
         push!(s, string("(i32.const ",4*as[4],"))"))
     else
         push!(s, string("(i32.add"))
-        parseitem(s, cinfo, as[3])
+        parseitem(s, cinfo, as[3], SSAid)
         push!(s, string("(i32.mul (i32.const 4)"))
-        parseitem(s, cinfo, as[4])
+        parseitem(s, cinfo, as[4], SSAid)
         push!(s, string("))"))
     end
     #push!(s, string(")"))
 end
 
-function ex_arrayset(s, cinfo, as)
+function ex_arrayset(s, cinfo, as, SSAid)
     #as= [GlobalRef, Bool=true, arrayname, value, idx]
     #                              3        4     5
     push!(s, string("f32.store"))
     if isa(as[5],Number)
         push!(s, string("(i32.add"))
-        parseitem(s, cinfo, as[3])
+        parseitem(s, cinfo, as[3], SSAid)
         push!(s, string("(i32.const ",4*as[5],"))"))
-        parseitem(s, cinfo, as[4])
+        parseitem(s, cinfo, as[4], SSAid)
         #ptr = string(" (i32.add (get_local \$",string(ex.args[2]),") (i32.const ",4*(ex.args[4]),"))")
     else
         push!(s, string("(i32.add"))
-        parseitem(s, cinfo, as[3])
+        parseitem(s, cinfo, as[3], SSAid)
         push!(s, string("(i32.mul (i32.const 4)"))
-        parseitem(s, cinfo, as[5])
+        parseitem(s, cinfo, as[5], SSAid)
         push!(s, string("))"))
-        parseitem(s, cinfo, as[4])
+        parseitem(s, cinfo, as[4], SSAid)
     end
     #push!(s, string(")"))
 end
