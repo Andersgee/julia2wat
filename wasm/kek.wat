@@ -13,7 +13,7 @@
 (func $atan (import "imports" "atan") (param f32) (result f32))
 
 (func $f (export "f") (param $N f32) (result f32)
-((block (loop (br_if 1 (i32.eqz(i32.lt_s(i32.const 10)))))(i32.add(i32.const 1))(f32.add(local.get $N))(br 0)))
+((local localvardict[key] cinfo.ssavaluetypes[myssaindex]) (local.set localvardict[unused_key]))((local localvardict[key] cinfo.ssavaluetypes[myssaindex]) (local.set localvardict[unused_key]))((block (loop (br_if 1 (i32.eqz((local.set localvardict[key] i32.lt_s(local.get $localvardict[key])(i32.const 10)))))((local.set localvardict[key] i32.add(local.get $localvardict[key])(i32.const 1))((local.set localvardict[key] f32.add(local.get $localvardict[key])(local.get $N))(br 0)))((local.set localvardict[key] (local.get $localvardict[key]))
 )
 
 )

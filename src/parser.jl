@@ -17,10 +17,13 @@ function exA2functext(ex, A; doexport=true)
 end
 
 moduletext = [];
+localvardict = Dict()
 function code_wat(ex, A, name)
 	info("DEBUGINFO: ex=",ex, " A=",A)
 	global moduletext	
-	moduletext = [];	 
+	moduletext = [];
+    global localvardict
+    localvardict = Dict()
 	push!(moduletext, exA2functext(ex, A))
     savewat(moduletext, name)
 end
@@ -51,7 +54,12 @@ end
 
 function parsearg(s,cinfo, a, head=:(call))
 	if isa(a,SSAValue)
-        push!(s,a)
+        if isa(cinfo.code[a.id], PhiNode)
+            push!(s, "(local.get \$localvardict[key])")
+            prepend!(s, ["(local.set localvardict[key] "]) #this will break parenthesis...
+        else
+            push!(s,a)
+        end
     elseif isa(a,SlotNumber)
         op_get(s, cinfo, a)
     elseif isa(a,GlobalRef)
@@ -94,6 +102,12 @@ function parsearg(s,cinfo, a, head=:(call))
         info("DEBUGINFO: ",head," IntrinsicFunction ",a)
     elseif isa(a,GotoNode)
         push!(s, "(br 0)))") #aka continue loop
+    elseif isa(a,PhiNode)
+        info("DEBUGINFO: ",head," PhiNode.edges ",a.edges)
+        info("DEBUGINFO: ",head," PhiNode.values ",a.values)
+        global localvardict
+        prepend!(s, ["(local localvardict[key] cinfo.ssavaluetypes[myssaindex])"])
+        push!(s, " (local.set localvardict[unused_key])")
     #elseif isa(a,String)
         #push!(s,a) #need way more shenanigans for this to work in wasm
     #=
@@ -162,32 +176,6 @@ function functiondeclaration(cinfo, A, R, doexport=false, opt=true)
     
     return join(s)
 end
-
-#=
-function inlinephivalues(SSA)
-	used=[]
-    for i=1:length(SSA), j=1:length(SSA[i])
-        if isa(SSA[i][j],PhiNode)
-        	SSA[i][j] = Dict(SSA[i][j].edges .=> SSA[i][j].values) #PhiDict instead of PhiNode
-        	
-            for k in keys(SSA[i][j])
-            	if isa(SSA[i][j][k],SSAValue)
-            		push!(used, SSA[i][j][k].id)
-            		SSA[i][j][k] = SSA[SSA[i][j][k].id]
-            	elseif isa(SSA[i][j][k],Number)
-            		SSA[i][j][k] = string("(local tmp f32) (local.set tmp f32.const ",SSA[i][j][k],")")
-            	end
-            end
-        end
-    end
-
-    for i=1:length(SSA)
-        if (i in used)
-            SSA[i] = ""
-        end
-    end
-end
-=#
 
 function inlinessa(SSA)
     info("SSA:")
