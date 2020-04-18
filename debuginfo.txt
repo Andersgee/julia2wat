@@ -1,0 +1,54 @@
+DEBUGINFO: ex=f A=NTuple{4,Float64}
+DEBUGINFO: call GlobalRef julia2wat.llvmcall
+DEBUGINFO: call GlobalRef julia2wat.Float64
+DEBUGINFO: call Type Tuple{Float64}
+DEBUGINFO: call GlobalRef julia2wat.llvmcall
+DEBUGINFO: call GlobalRef julia2wat.Float64
+DEBUGINFO: call Type Tuple{Float64,Float64}
+SSA:
+%1: f32.add (local.get $a) (local.get $b)
+%2: call $sqrt
+%3: %2 %1
+%4: f32.add (local.get $c) (local.get $d)
+%5: call $exp %4
+%6: f32.mul %3 %5
+%7: call $pow
+%8: %7 %6 (f32.const 7.0)
+%9: call $log %8
+%10: %9
+DEBUGINFO: ex=f A=NTuple{4,Float64}
+DEBUGINFO: call GlobalRef julia2wat.llvmcall
+DEBUGINFO: call GlobalRef julia2wat.Float64
+DEBUGINFO: call Type Tuple{Float64}
+DEBUGINFO: call GlobalRef julia2wat.llvmcall
+DEBUGINFO: call GlobalRef julia2wat.Float64
+DEBUGINFO: call Type Tuple{Float64,Float64}
+SSA:
+%1: f32.add (local.get $a) (local.get $b)
+%2: call $sqrt
+%3: %2 %1
+%4: f32.add (local.get $c) (local.get $d)
+%5: call $exp %4
+%6: f32.mul %3 %5
+%7: call $pow
+%8: %7 %6 (f32.const 7.0)
+%9: call $log %8
+%10: %9
+DEBUGINFO: ex=f A=NTuple{4,Float64}
+DEBUGINFO: call GlobalRef julia2wat.llvmcall
+DEBUGINFO: call GlobalRef julia2wat.Float64
+DEBUGINFO: call Type Tuple{Float64}
+DEBUGINFO: call GlobalRef julia2wat.llvmcall
+DEBUGINFO: call GlobalRef julia2wat.Float64
+DEBUGINFO: call Type Tuple{Float64,Float64}
+SSA:
+%1: f32.add (local.get $a) (local.get $b)
+%2: call $sqrt
+%3: %2 %1
+%4: f32.add (local.get $c) (local.get $d)
+%5: call $exp %4
+%6: f32.mul %3 %5
+%7: call $pow
+%8: %7 %6 (f32.const 7.0)
+%9: call $log %8
+%10: %9

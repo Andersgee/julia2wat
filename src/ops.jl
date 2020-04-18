@@ -123,6 +123,9 @@ op_number(s,cinfo,a) = (typeof(a) <: AbstractFloat) ? push!(s, string("(f32.cons
 
 ## SPECIAL EXPRESSIONS
 
+#function ex_set()
+#end
+
 function ex_llvm(s, cinfo, as)
     if (as[2]=="declare double @llvm.sqrt.f64(double %Val)")
         push!(s,"call \$sqrt")
@@ -138,11 +141,10 @@ function ex_llvm(s, cinfo, as)
 end
 
 function ex_gotoifnot(s, cinfo, as)
-    push!(s, "br_if")
-    push!(s, as[2])
-    push!(s, "(i32.eqz")
-    push!(s, as[1])
-    push!(s, ")")
+    #(block (loop (br_if 1 (i32.eqz (i32.lt_s (get_local $i) (i32.const 10))))
+    push!(s, "(block (loop (br_if 1 (i32.eqz")
+    parseitem(s, cinfo, as[1])
+    push!(s, "))") #end eqz, end block loop later at the gotonode
 end
 
 function ex_ifelse(s, cinfo, as)

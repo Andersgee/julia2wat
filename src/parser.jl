@@ -3,8 +3,9 @@ macro code_wat(ex, name)
 end
 
 function exA2functext(ex, A; doexport=true)
-	cinfo, R = code_typed(ex, A, optimize=true)[1]
-	#dump(cinfo.code) #debug
+	#cinfo, R = code_typed(ex, A, optimize=true)[1]
+    cinfo, R = code_typed(ex, A, optimize=true)[1]
+	dump(cinfo.code) #debug
 	SSA=[]
     for item in cinfo.code
         s=[]
@@ -39,8 +40,10 @@ function parseexpr(s,cinfo, e)
         ex_arrayset(s, cinfo, e.args)
     elseif (isa(e.args[1],GlobalRef) && e.args[1].name == :(tuple)) && e.args[2][1:7] == "declare"
         ex_llvm(s,cinfo, e.args)
-    #elseif (e.head == :(gotoifnot))
-    #	ex_gotoifnot(s,cinfo, e.args)
+    elseif (e.head == :(gotoifnot)) #conditional branch, aka continue aka br_if but.. br_if egzero(condition) instead of gotoif condition ?
+    	ex_gotoifnot(s,cinfo, e.args)
+    #elseif e.head == :(=) #assignment in the IR
+    #   local.set ? 
     else
         parseitems(s,cinfo, e.args, e.head)
     end
@@ -50,7 +53,7 @@ function parsearg(s,cinfo, a, head=:(call))
 	if isa(a,SSAValue)
         push!(s,a)
     elseif isa(a,SlotNumber)
-        op_get(s,cinfo,a)
+        op_get(s, cinfo, a)
     elseif isa(a,GlobalRef)
     	if (a.name in keys(op))
     		push!(s,op[a.name])
@@ -89,6 +92,8 @@ function parsearg(s,cinfo, a, head=:(call))
         info("DEBUGINFO: ",head," Symbol ",a)
     elseif isa(a,IntrinsicFunction)
         info("DEBUGINFO: ",head," IntrinsicFunction ",a)
+    elseif isa(a,GotoNode)
+        push!(s, "(br 0)))") #aka continue loop
     #elseif isa(a,String)
         #push!(s,a) #need way more shenanigans for this to work in wasm
     #=
@@ -100,7 +105,15 @@ function parsearg(s,cinfo, a, head=:(call))
     elseif isa(a,GotoNode)
     	info("DEBUGINFO: ",head," GotoNode ",a)
     	push!(s, "goto",a.label)
+        push!(s, "(br 0)))")
+
+    elseif isa(a,QuoteNode)
+        push!(s, eval(a) #quotenode holds arbitrary value as reference instead of value (such as symbols)
+    elsied isa(a,GotoNode)
+        push!(s, "br") #unconditional branch, this needs to be an end parenthesis for loop, and make sure that 
+        #a.label targets a block..
     =#
+
 	else
 		info("DEBUGINFO: ",head," ELSE_ARG ",a)
 	end
