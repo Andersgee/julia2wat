@@ -23,7 +23,7 @@ function exA2functext(ex, A; doexport=true)
     
 
     cinfo, R = code_typed(ex, A, optimize=true)[1]
-	dump(cinfo.code) #debug
+	#dump(cinfo.code) #debug
 
     global phidict = Dict()
     phidict = phi2dict(cinfo, length(getfield(A,3))+2)
@@ -212,11 +212,15 @@ function functiondeclaration(cinfo, A, R, doexport=false, opt=true)
     return join(s)
 end
 
-function inlinessa(SSA)
+function printSSA(SSA)
     info("SSA:")
     for i=1:length(SSA)
-    	info("%",i,": ",join(string.(SSA[i])," "))
+        info("%",i,": ",join(string.(SSA[i])," "))
     end
+end
+
+function inlinessa(SSA)
+    
 
     used=[]
 
@@ -226,6 +230,8 @@ function inlinessa(SSA)
     		SSA[i] = vcat("(",SSA[i],")")
     	end
     end
+
+    printSSA(SSA)
 
     #copy paste from SSA
     for i=1:length(SSA), j=1:length(SSA[i])
