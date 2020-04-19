@@ -2,10 +2,32 @@ macro code_wat(ex, name)
 	:(code_wat($(esc(ex.args[1])), Base.typesof($(esc.(ex.args[2:end])...)), $name))
 end
 
+function phi2dict(cinfo, firstslotnum)
+    d=Dict()
+    slotnum = firstslotnum
+    for SSAid=1:length(cinfo.code)
+        if isa(cinfo.code[SSAid],PhiNode)
+            pn = cinfo.code[SSAid]
+            k = Dict(pn.edges .=> pn.values)
+            k[0] = string("\$",string(cinfo.slotnames[slotnum]))
+            d[SSAid] = k
+            println(d)
+            slotnum+=1;
+        end
+    end
+    return d
+end
+
 function exA2functext(ex, A; doexport=true)
 	#cinfo, R = code_typed(ex, A, optimize=true)[1]
+    
+
     cinfo, R = code_typed(ex, A, optimize=true)[1]
 	dump(cinfo.code) #debug
+
+    global phidict = Dict()
+    phidict = phi2dict(cinfo, length(getfield(A,3))+2)
+
 	SSA=[]
     for SSAid=1:length(cinfo.code)
         s=[]
@@ -17,14 +39,13 @@ function exA2functext(ex, A; doexport=true)
 end
 
 moduletext = [];
-localvardict = Dict()
+phidict = Dict()
 function code_wat(ex, A, name)
+
     resetinfo()
 	info("DEBUGINFO: ex=",ex, " A=",A)
 	global moduletext	
 	moduletext = [];
-    global localvardict
-    localvardict = Dict()
 	push!(moduletext, exA2functext(ex, A))
     savewat(moduletext, name)
 end
@@ -56,14 +77,14 @@ end
 function parsearg(s,cinfo, a, SSAid, head=:(call))
 	if isa(a,SSAValue)
         if isa(cinfo.code[a.id], PhiNode)
-            push!(s, "(local.get \$localvardict[key])")
-            #if (head != Symbol("return"))
-
+            target = a.id
+            global phidict
+            locallabel = phidict[target][0]
+            push!(s, "(local.get ",locallabel,")")
             #pn = cinfo.code[a.id]; #phinode
             #d = Dict(pn.edges .=> pn.values) #phinode dict
-            if (SSAValue(SSAid) in values(cinfo.code[a.id].values) )
-                println("TRIGGERED")
-                prepend!(s, ["(local.set localvardict[key] "]) #this will break parenthesis...
+            if (SSAValue(SSAid) in cinfo.code[a.id].values )
+                prepend!(s, ["local.set ",locallabel," ("])
             end
         else
             push!(s,a)
@@ -113,9 +134,13 @@ function parsearg(s,cinfo, a, SSAid, head=:(call))
     elseif isa(a,PhiNode)
         info("DEBUGINFO: ",head," PhiNode.edges ",a.edges)
         info("DEBUGINFO: ",head," PhiNode.values ",a.values)
-        global localvardict
-        prepend!(s, [join(["(local localvardict[key] ",type2str(cinfo.ssavaluetypes[SSAid]),")"])])
-        push!(s, " (local.set localvardict[unused_key])")
+        global phidict
+        println("ISA PHINODE:")
+        println(phidict)
+        locallabel = phidict[SSAid][0]
+        push!(s, string("(local ",locallabel," ",type2str(cinfo.ssavaluetypes[SSAid]),") (local.set ",locallabel,")"))
+        #prepend!(s, [join(["(local ",locallabel," ",type2str(cinfo.ssavaluetypes[SSAid]),")"])])
+        #push!(s, string(" (local.set ",locallabel,")"))
     elseif isa(a,PiNode)
         op_number(s,cinfo,a.val)
     #elseif isa(a,String)

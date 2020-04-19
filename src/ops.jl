@@ -144,9 +144,9 @@ end
 
 function ex_gotoifnot(s, cinfo, as, SSAid)
     #(block (loop (br_if 1 (i32.eqz (i32.lt_s (get_local $i) (i32.const 10))))
-    push!(s, "(block (loop (br_if 1 (i32.eqz")
+    push!(s, "block (loop (br_if 1 (i32.eqz")
     parseitem(s, cinfo, as[1], SSAid)
-    push!(s, "))") #end eqz, end block loop later at the gotonode
+    push!(s, ")") #end eqz, end block loop later at the gotonode
 end
 
 function ex_ifelse(s, cinfo, as, SSAid)
