@@ -13,7 +13,7 @@ function phi2dict(cinfo, firstslotnum)
             k["initval"] = k[minimum(pn.edges)]
 
             d[SSAid] = k
-            println(d)
+            #println(d)
             slotnum+=1;
         end
     end
@@ -36,7 +36,9 @@ function exA2functext(ex, A; doexport=true)
         parseitem(s,cinfo, cinfo.code[SSAid], SSAid)
         push!(SSA,s)
     end
-    functext = join(["\n",functiondeclaration(cinfo, A, R, doexport), "\n",inlinessa(SSA),"\n)\n"])
+    localdeclaration = join([phidict[k]["declaration"] for k in keys(phidict)])
+    #localdeclaration = "a"
+    functext = join(["\n",functiondeclaration(cinfo, A, R, doexport), "\n", localdeclaration,"\n", inlinessa(SSA), "\n)\n"])
     return functext
 end
 
@@ -135,10 +137,9 @@ function parsearg(s,cinfo, a, SSAid, head=:(call))
         info("DEBUGINFO: ",head," PhiNode.edges ",a.edges)
         info("DEBUGINFO: ",head," PhiNode.values ",a.values)
         global phidict
-        println("ISA PHINODE:")
-        println(phidict)
         locallabel = phidict[SSAid]["label"]
-        push!(s, string("(local ",locallabel," ",type2str(cinfo.ssavaluetypes[SSAid]),") (local.set ",locallabel," ",num2str(phidict[SSAid]["initval"]),")"))
+        phidict[SSAid]["declaration"] = string("(local ",locallabel," ",type2str(cinfo.ssavaluetypes[SSAid]),")")
+        push!(s, string("(local.set ",locallabel," ",num2str(phidict[SSAid]["initval"]),")"))
         #prepend!(s, [join(["(local ",locallabel," ",type2str(cinfo.ssavaluetypes[SSAid]),")"])])
         #push!(s, string(" (local.set ",locallabel,")"))
     elseif isa(a,PiNode)
