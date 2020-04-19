@@ -122,6 +122,7 @@ op_get(s,cinfo,a) = push!(s,string("(local.get \$",cinfo.slotnames[a.id],")"))
 op_number(s,cinfo,a) = (typeof(a) <: AbstractFloat) ? push!(s, string("(f32.const ",a,")")) : push!(s, string("(i32.const ",a,")"))
 
 type2str(t) = (t <: AbstractFloat) ? "f32" : "i32";
+num2str(a) = (typeof(a) <: AbstractFloat) ? string("(f32.const ",a,")") : string("(i32.const ",a,")")
 
 ## SPECIAL EXPRESSIONS
 

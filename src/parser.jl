@@ -8,8 +8,10 @@ function phi2dict(cinfo, firstslotnum)
     for SSAid=1:length(cinfo.code)
         if isa(cinfo.code[SSAid],PhiNode)
             pn = cinfo.code[SSAid]
-            k = Dict(pn.edges .=> pn.values)
-            k[0] = string("\$",string(cinfo.slotnames[slotnum]))
+            k = Dict{Any,Any}(pn.edges .=> pn.values)
+            k["label"] = string("\$",string(cinfo.slotnames[slotnum]))
+            k["initval"] = k[minimum(pn.edges)]
+
             d[SSAid] = k
             println(d)
             slotnum+=1;
@@ -79,7 +81,7 @@ function parsearg(s,cinfo, a, SSAid, head=:(call))
         if isa(cinfo.code[a.id], PhiNode)
             target = a.id
             global phidict
-            locallabel = phidict[target][0]
+            locallabel = phidict[target]["label"]
             push!(s, "(local.get ",locallabel,")")
             #pn = cinfo.code[a.id]; #phinode
             #d = Dict(pn.edges .=> pn.values) #phinode dict
@@ -135,8 +137,8 @@ function parsearg(s,cinfo, a, SSAid, head=:(call))
         global phidict
         println("ISA PHINODE:")
         println(phidict)
-        locallabel = phidict[SSAid][0]
-        push!(s, string("(local ",locallabel," ",type2str(cinfo.ssavaluetypes[SSAid]),") (local.set ",locallabel,")"))
+        locallabel = phidict[SSAid]["label"]
+        push!(s, string("(local ",locallabel," ",type2str(cinfo.ssavaluetypes[SSAid]),") (local.set ",locallabel," ",num2str(phidict[SSAid]["initval"]),")"))
         #prepend!(s, [join(["(local ",locallabel," ",type2str(cinfo.ssavaluetypes[SSAid]),")"])])
         #push!(s, string(" (local.set ",locallabel,")"))
     elseif isa(a,PiNode)
@@ -235,8 +237,10 @@ function inlinessa(SSA)
     for i=1:length(SSA), j=1:length(SSA[i])
         if isa(SSA[i][j],SSAValue)
             c = SSA[i][j].id
+
+            #special case when the targetet SSA is a phinode, I interpret phinodes to always mean local variable, which I think is right
             if (isa(SSA[c],PhiNode)) && (SSAValue(i) in SSA[c].values)
-                locallabel = phidict[c][0]
+                locallabel = phidict[c]["label"]
                 prepend!(SSA[i], ["local.set ",locallabel," ("])
                 push!(SSA[i], ")")
             end
