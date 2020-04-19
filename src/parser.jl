@@ -38,7 +38,7 @@ function exA2functext(ex, A; doexport=true)
     end
     localdeclaration = join([phidict[k]["declaration"] for k in keys(phidict)])
     #localdeclaration = "a"
-    functext = join(["\n",functiondeclaration(cinfo, A, R, doexport), "\n", localdeclaration,"\n", inlinessa(SSA), "\n)\n"])
+    functext = join(["\n",functiondeclaration(cinfo, A, R, doexport), "\n", localdeclaration,"\n", inlinessa(SSA,cinfo,phidict), "\n)\n"])
     return functext
 end
 
@@ -85,8 +85,12 @@ function parsearg(s,cinfo, a, SSAid, head=:(call))
             global phidict
             locallabel = phidict[target]["label"]
             push!(s, "(local.get ",locallabel,")")
-            #pn = cinfo.code[a.id]; #phinode
-            #d = Dict(pn.edges .=> pn.values) #phinode dict
+
+            #=
+            if SSAValue(SSAid) in values(phidict[target])
+                prepend!(s, ["local.set ",locallabel," ("])
+            end
+            =#
             
         else
             push!(s,a)
@@ -220,8 +224,19 @@ function printSSA(SSA)
     end
 end
 
-function inlinessa(SSA)
-    
+function inlinessa(SSA,cinfo,phidict)
+    #deal with set local from phinodes
+
+    for k in keys(phidict)
+        d = phidict[k]
+        for i=1:length(SSA)
+            if SSAValue(i) in values(d)
+                locallabel = phidict[k]["label"]
+                prepend!(SSA[i], ["local.set ",locallabel," ("])
+                push!(SSA[i],")")
+            end
+        end
+    end
 
     used=[]
 
@@ -232,22 +247,15 @@ function inlinessa(SSA)
     	end
     end
 
+    
     printSSA(SSA)
 
     #copy paste from SSA
     for i=1:length(SSA), j=1:length(SSA[i])
         if isa(SSA[i][j],SSAValue)
-            c = SSA[i][j].id
-
-            #special case when the targetet SSA is a phinode, I interpret phinodes to always mean local variable, which I think is right
-            if (isa(SSA[c],PhiNode)) && (SSAValue(i) in SSA[c].values)
-                locallabel = phidict[c]["label"]
-                prepend!(SSA[i], ["local.set ",locallabel," ("])
-                push!(SSA[i], ")")
-            end
-
-            SSA[i][j] = join(SSA[c])
-            push!(used, c)
+            target = SSA[i][j].id
+            SSA[i][j] = join(SSA[target])
+            push!(used, target)
             
         end
     end
