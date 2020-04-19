@@ -83,9 +83,7 @@ function parsearg(s,cinfo, a, SSAid, head=:(call))
             push!(s, "(local.get ",locallabel,")")
             #pn = cinfo.code[a.id]; #phinode
             #d = Dict(pn.edges .=> pn.values) #phinode dict
-            if (SSAValue(SSAid) in cinfo.code[a.id].values )
-                prepend!(s, ["local.set ",locallabel," ("])
-            end
+            
         else
             push!(s,a)
         end
@@ -237,8 +235,15 @@ function inlinessa(SSA)
     for i=1:length(SSA), j=1:length(SSA[i])
         if isa(SSA[i][j],SSAValue)
             c = SSA[i][j].id
+            if (isa(SSA[c],PhiNode)) && (SSAValue(i) in SSA[c].values)
+                locallabel = phidict[c][0]
+                prepend!(SSA[i], ["local.set ",locallabel," ("])
+                push!(SSA[i], ")")
+            end
+
             SSA[i][j] = join(SSA[c])
             push!(used, c)
+            
         end
     end
 
