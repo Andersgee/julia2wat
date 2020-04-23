@@ -6,14 +6,15 @@ function phi2dict(cinfo, firstslotnum)
     d=Dict()
     slotnum = firstslotnum
     for SSAid=1:length(cinfo.code)
-        if isa(cinfo.code[SSAid],PhiNode)
+        if isa(cinfo.code[SSAid],PhiNode) && slotnum<=length(cinfo.slotnames)
+            #(cinfo.slotnames[slotnum] == Symbol("")) #whats this..
+                
             pn = cinfo.code[SSAid]
             k = Dict{Any,Any}(pn.edges .=> pn.values)
             k["label"] = string("\$",string(cinfo.slotnames[slotnum]))
             k["initval"] = k[minimum(pn.edges)]
-
             d[SSAid] = k
-            #println(d)
+
             slotnum+=1;
         end
     end
@@ -25,10 +26,10 @@ function exA2functext(ex, A; doexport=true)
     
 
     cinfo, R = code_typed(ex, A, optimize=true)[1]
-	#dump(cinfo.code) #debug
+	dump(cinfo.code) #debug
 
     global phidict = Dict()
-    phidict = phi2dict(cinfo, length(getfield(A,3))+2)
+    phidict = phi2dict(cinfo, length(getfield(A,3))+2) #if 1 arg, start at slotname 3 cuz first is just :("#self#")
 
 	SSA=[]
     for SSAid=1:length(cinfo.code)
